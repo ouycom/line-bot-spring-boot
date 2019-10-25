@@ -1,0 +1,4 @@
+line.bot:
+  channel-token: 'ouy2-noti'
+  channel-secret: 'TNMEKkbOeXITNon5yFltXItAc6IFDfVf8Zr2it8g5Dy'
+  handler.path: /callback
