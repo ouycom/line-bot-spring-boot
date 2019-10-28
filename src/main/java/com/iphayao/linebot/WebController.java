@@ -19,6 +19,8 @@ public class WebController {
 
     @Autowired
     private RestTemplate myRestTemplate;
+    @Autowired
+    private WebConfigure webConfigure;
 
     @GetMapping("/test")
     public String echoDate(){
@@ -44,7 +46,7 @@ public class WebController {
     }
 
     private ResponseEntity<String> sendLineNoti(String token, String body){
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.setContentLength(body.length());
         headers.add("Authorization", "Bearer "+token);

@@ -1,6 +1,7 @@
 package com.iphayao.linebot.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
@@ -11,11 +12,6 @@ import java.util.Map;
 
 @Component
 public class JsonUtil {
-
-    public Object map2Object(Map<String, Object> map, Class c) throws IOException {
-        String value = map2json(map);
-        return new ObjectMapper().readValue(value, c.getClass());
-    }
 
     public Map<String, Object> json2Map(String json) throws IOException {
         HashMap<String, Object> result = new ObjectMapper().readValue(json, HashMap.class);
@@ -54,4 +50,14 @@ public class JsonUtil {
             return mapper.writeValueAsString(model);
         }
     }
+
+    public Object map2Object(Map<String, Object> map, Class c) throws IOException {
+        String str = map2json(map);
+        return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(str, c);
+    }
+
+//    public Object list2Object(List<Map<String, Object>> list, Object obj) throws IOException {
+//        String str = list2json(list);
+//        return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(str, obj.getClass());
+//    }
 }

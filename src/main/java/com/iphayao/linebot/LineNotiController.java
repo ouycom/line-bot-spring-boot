@@ -1,6 +1,10 @@
 package com.iphayao.linebot;
 
 import com.iphayao.linebot.util.JsonUtil;
+import com.linecorp.bot.model.ReplyMessage;
+import com.linecorp.bot.model.message.Message;
+import com.linecorp.bot.model.message.TemplateMessage;
+import com.linecorp.bot.model.message.template.Template;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,10 +13,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @RestController
@@ -27,11 +33,32 @@ public class LineNotiController {
     private Environment env;
     @Autowired
     private JsonUtil jsonUtil;
+    @Autowired
+    private LineBotController lineBotController;
 
     /* same as WebController */
     @GetMapping("/do")
-    public boolean callEvent(@RequestBody String body) {
+    public boolean callEvent(@RequestBody String body) throws IOException {
+        log.info("callEvent : {}" , body);
+
         String json = env.getProperty("ouybot." + body);
+        log.info("response : {}" , json);
+
+        Map<String, Object> map = jsonUtil.json2Map(json);
+        String type = (String)map.get("type");
+        switch (type){
+            case "template" :
+                log.info("createTemplateMessage from json");
+
+                Message message = lineBotController.createTemplateMessag(map);
+                log.info("templateMessage : {}" , message.toString());
+                break;
+            case "image" :
+                break;
+        }
+
+
+
         return callEvent(token, json);
     }
 

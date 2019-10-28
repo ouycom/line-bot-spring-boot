@@ -1,5 +1,7 @@
 package com.iphayao.linebot;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.iphayao.linebot.util.JsonUtil;
 import com.linecorp.bot.client.LineMessagingClient;
@@ -29,6 +31,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -88,7 +91,10 @@ public class LineBotController {
                     jpg.path.toString(),
                     previewImage.path.toString());
 
-            reply(replyToken, new ImageMessage(jpg.getUri(), previewImage.getUri()));
+            //old version
+//            reply(replyToken, new ImageMessage(jpg.getUri(), previewImage.getUri()));
+            //new version
+            reply(replyToken, new ImageMessage(URI.create(jpg.getUri()) , URI.create(previewImage.getUri())));
 
         } catch (InterruptedException | ExecutionException e) {
             reply(replyToken, new TextMessage("Cannot get image: " + content));
@@ -143,12 +149,7 @@ public class LineBotController {
         String type = (String)map.get("type");
         switch (type){
             case "template" :
-                String altText = (String)map.get("altText");
-                Map<String, Object> templateMap = (Map)map.get("template");
-                String templateType = (String)templateMap.get("type");
-
-                Template template = createTemplate(templateType, templateMap);
-                Message message = new TemplateMessage(altText, null );
+                Message message = createTemplateMessag(map);
                 ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
                 lineMessagingClient.replyMessage(replyMessage);
                 break;
@@ -158,7 +159,18 @@ public class LineBotController {
 
     }
 
-    private Template createTemplate(String templateType, Map<String, Object> templateMap) throws IOException {
+    protected Message createTemplateMessag(Map<String, Object> map) throws IOException {
+        String altText = (String)map.get("altText");
+        Template template = createTemplate(map);
+        Message message = new TemplateMessage(altText, template );
+        return message;
+    }
+
+
+    protected Template createTemplate(Map<String, Object> map) throws IOException {
+
+        Map<String, Object> templateMap = (Map)map.get("template");
+        String templateType = (String)templateMap.get("type");
         Template template = null;
         switch (templateType){
             case "carousel" :
