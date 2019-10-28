@@ -154,8 +154,8 @@ public class LineBotController {
                         e.printStackTrace();
                     }
                 }else {
-                    log.info("Return echo message {} : {}", replyToken, text);
-                    this.replyText(replyToken, text);
+                    //log.info("Return echo message {} : {}", replyToken, text);
+                    //this.replyText(replyToken, text);
                 }
         }
     }
@@ -298,7 +298,6 @@ public class LineBotController {
     protected Message createFlexMessage(Map<String, Object> map) throws IOException {
         String altText = (String)map.get("altText");
         Map<String, Object> templateMap = (Map)map.get("template");
-        String templateType = (String)templateMap.get("type");
         FlexContainer template = (FlexContainer)jsonUtil.map2Object(templateMap, FlexContainer.class);
 
         Message message = new FlexMessage(altText, template );
