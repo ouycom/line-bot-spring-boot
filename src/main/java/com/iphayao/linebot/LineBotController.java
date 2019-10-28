@@ -297,10 +297,7 @@ public class LineBotController {
 
     protected Message createFlexMessage(Map<String, Object> map) throws IOException {
         String altText = (String)map.get("altText");
-        Map<String, Object> templateMap = (Map)map.get("template");
-        FlexContainer template = (FlexContainer)jsonUtil.map2Object(templateMap, FlexContainer.class);
-
-        Message message = new FlexMessage(altText, template );
+        FlexMessage message = (FlexMessage)jsonUtil.map2Object(map, FlexMessage.class);
         return message;
     }
 

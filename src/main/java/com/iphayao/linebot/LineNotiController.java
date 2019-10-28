@@ -36,7 +36,7 @@ public class LineNotiController {
     @Autowired
     private LineBotController lineBotController;
 
-    /* same as WebController */
+
     @GetMapping("/do")
     public boolean callEvent(@RequestBody String body) throws IOException {
         log.info("callEvent : {}" , body);
@@ -47,21 +47,29 @@ public class LineNotiController {
         Map<String, Object> map = jsonUtil.json2Map(json);
         String type = (String)map.get("type");
         switch (type){
-            case "template" :
+            case "template" : {
                 log.info("createTemplateMessage from json");
 
                 Message message = lineBotController.createTemplateMessage(map);
-                log.info("templateMessage : {}" , message.toString());
+                log.info("templateMessage : {}", message.toString());
                 break;
+            }
             case "image" :
                 break;
+            case "flex" : {
+                log.info("createFlexMessage from json");
+
+                Message message = lineBotController.createFlexMessage(map);
+                log.info("flexMessage : {}", message.toString());
+                break;
+            }
         }
 
-
-
-        return callEvent(token, json);
+//        return callEvent(token, json);
+        return true;
     }
 
+    /* same as WebController */
     public boolean callEvent(String token, String message) {
         boolean result = false;
         try {
