@@ -16,6 +16,7 @@ import com.linecorp.bot.model.event.message.StickerMessageContent;
 import com.linecorp.bot.model.event.message.TextMessageContent;
 import com.linecorp.bot.model.event.postback.PostbackContent;
 import com.linecorp.bot.model.message.*;
+import com.linecorp.bot.model.message.flex.container.FlexContainer;
 import com.linecorp.bot.model.message.template.ButtonsTemplate;
 import com.linecorp.bot.model.message.template.CarouselTemplate;
 import com.linecorp.bot.model.message.template.ConfirmTemplate;
@@ -246,6 +247,12 @@ public class LineBotController {
                 lineMessagingClient.replyMessage(replyMessage);
                 break;
             }
+            case "flex" : {
+                Message message = createFlexMessage(map);
+                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
+                lineMessagingClient.replyMessage(replyMessage);
+                break;
+            }
         }
 
     }
@@ -285,6 +292,16 @@ public class LineBotController {
 
     protected Message createLocationMessage(Map<String, Object> map) throws IOException {
         LocationMessage message = (LocationMessage)jsonUtil.map2Object(map, LocationMessage.class);
+        return message;
+    }
+
+    protected Message createFlexMessage(Map<String, Object> map) throws IOException {
+        String altText = (String)map.get("altText");
+        Map<String, Object> templateMap = (Map)map.get("template");
+        String templateType = (String)templateMap.get("type");
+        FlexContainer template = (FlexContainer)jsonUtil.map2Object(templateMap, FlexContainer.class);
+
+        Message message = new FlexMessage(altText, template );
         return message;
     }
 
