@@ -50,7 +50,7 @@ public class LineNotiController {
             case "template" :
                 log.info("createTemplateMessage from json");
 
-                Message message = lineBotController.createTemplateMessag(map);
+                Message message = lineBotController.createTemplateMessage(map);
                 log.info("templateMessage : {}" , message.toString());
                 break;
             case "image" :

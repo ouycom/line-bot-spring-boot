@@ -9,10 +9,12 @@ import com.linecorp.bot.client.MessageContentResponse;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.Event;
 import com.linecorp.bot.model.event.MessageEvent;
+import com.linecorp.bot.model.event.PostbackEvent;
 import com.linecorp.bot.model.event.message.ImageMessageContent;
 import com.linecorp.bot.model.event.message.LocationMessageContent;
 import com.linecorp.bot.model.event.message.StickerMessageContent;
 import com.linecorp.bot.model.event.message.TextMessageContent;
+import com.linecorp.bot.model.event.postback.PostbackContent;
 import com.linecorp.bot.model.message.*;
 import com.linecorp.bot.model.message.template.ButtonsTemplate;
 import com.linecorp.bot.model.message.template.CarouselTemplate;
@@ -48,6 +50,9 @@ public class LineBotController {
     @Autowired
     private JsonUtil jsonUtil;
 
+    /////// Handle Message
+
+
     @EventMapping
     public void handleTextMessage(MessageEvent<TextMessageContent> event) {
         log.info(event.toString());
@@ -58,10 +63,12 @@ public class LineBotController {
     @EventMapping
     public void handleStickerMessage(MessageEvent<StickerMessageContent> event) {
         log.info(event.toString());
+//        StickerMessageContent message = event.getMessage();
+//        reply(event.getReplyToken(), new StickerMessage(
+//                message.getPackageId(), message.getStickerId()
+//        ));
         StickerMessageContent message = event.getMessage();
-        reply(event.getReplyToken(), new StickerMessage(
-                message.getPackageId(), message.getStickerId()
-        ));
+        handleStickerContent(event.getReplyToken(), message);
     }
 
     @EventMapping
@@ -103,10 +110,19 @@ public class LineBotController {
 
     }
 
+    @EventMapping
+    public void handlePostbackMessage(PostbackEvent event) {
+        log.info(event.toString());
+        PostbackContent content = event.getPostbackContent();
+        handlePostbackContent(event.getReplyToken(), event, content);
+    }
+
+    /////// Handle Content
+
     private void handleTextContent(String replyToken, Event event, TextMessageContent content) {
         String text = content.getText();
 
-        log.info("Got text message from %s : %s", replyToken, text);
+        log.info("Got text message from {} : {}", replyToken, text);
 
         switch (text) {
             case "Profile": {
@@ -128,7 +144,6 @@ public class LineBotController {
                 break;
             }
             default:
-                log.info("Return echo message %s : %s", replyToken, text);
                 String json = env.getProperty("ouybot." + text);
                 if(json!=null){
                     try {
@@ -138,52 +153,10 @@ public class LineBotController {
                         e.printStackTrace();
                     }
                 }else {
+                    log.info("Return echo message {} : {}", replyToken, text);
                     this.replyText(replyToken, text);
                 }
         }
-    }
-
-    private void replyObject(String replyToken, String json) throws IOException {
-        Map<String, Object> map = jsonUtil.json2Map(json);
-
-        String type = (String)map.get("type");
-        switch (type){
-            case "template" :
-                Message message = createTemplateMessag(map);
-                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
-                lineMessagingClient.replyMessage(replyMessage);
-                break;
-            case "image" :
-                break;
-        }
-
-    }
-
-    protected Message createTemplateMessag(Map<String, Object> map) throws IOException {
-        String altText = (String)map.get("altText");
-        Template template = createTemplate(map);
-        Message message = new TemplateMessage(altText, template );
-        return message;
-    }
-
-
-    protected Template createTemplate(Map<String, Object> map) throws IOException {
-
-        Map<String, Object> templateMap = (Map)map.get("template");
-        String templateType = (String)templateMap.get("type");
-        Template template = null;
-        switch (templateType){
-            case "carousel" :
-                template = (CarouselTemplate)jsonUtil.map2Object(templateMap, CarouselTemplate.class);
-                break;
-            case "buttons" :
-                template = (ButtonsTemplate)jsonUtil.map2Object(templateMap, ButtonsTemplate.class);
-                break;
-            case "confirm" :
-                template = (ConfirmTemplate)jsonUtil.map2Object(templateMap, ConfirmTemplate.class);
-                break;
-        }
-        return template;
     }
 
     private void handleStickerContent(String replyToken, StickerMessageContent content) {
@@ -191,6 +164,33 @@ public class LineBotController {
                 content.getPackageId(), content.getStickerId()
         ));
     }
+
+    private void handlePostbackContent(String replyToken, PostbackEvent event, PostbackContent content) {
+
+        String data = content.getData();
+        switch (data){
+            case "Date1" :
+                String date = content.getParams().get("date");
+                this.replyText(replyToken, "you choose date " + date);
+                break;
+            default:
+                String json = env.getProperty("ouybot." + data);
+                if(json != null) {
+                    try {
+                        replyObject(replyToken, json);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }else{
+                    this.replyText(replyToken, "Unknow command : " + data);
+                }
+        }
+
+
+    }
+
+
+    ////////// Reply
 
     private void replyText(@NonNull  String replyToken, @NonNull String message) {
         if(replyToken.isEmpty()) {
@@ -216,6 +216,79 @@ public class LineBotController {
             throw new RuntimeException(e);
         }
     }
+
+    private void replyObject(String replyToken, String json) throws IOException {
+        Map<String, Object> map = jsonUtil.json2Map(json);
+
+        String type = (String)map.get("type");
+        switch (type){
+            case "template" : {
+                Message message = createTemplateMessage(map);
+                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
+                lineMessagingClient.replyMessage(replyMessage);
+                break;
+            }
+            case "image" : {
+                Message message = createImageMessage(map);
+                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
+                lineMessagingClient.replyMessage(replyMessage);
+                break;
+            }
+            case "sticker" : {
+                Message message = createStickerMessage(map);
+                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
+                lineMessagingClient.replyMessage(replyMessage);
+                break;
+            }
+            case "location" : {
+                Message message = createLocationMessage(map);
+                ReplyMessage replyMessage = new ReplyMessage(replyToken, message);
+                lineMessagingClient.replyMessage(replyMessage);
+                break;
+            }
+        }
+
+    }
+
+
+    /////// Create Template
+
+    protected Message createTemplateMessage(Map<String, Object> map) throws IOException {
+        String altText = (String)map.get("altText");
+        Map<String, Object> templateMap = (Map)map.get("template");
+        String templateType = (String)templateMap.get("type");
+        Template template = null;
+        switch (templateType){
+            case "carousel" :
+                template = (CarouselTemplate)jsonUtil.map2Object(templateMap, CarouselTemplate.class);
+                break;
+            case "buttons" :
+                template = (ButtonsTemplate)jsonUtil.map2Object(templateMap, ButtonsTemplate.class);
+                break;
+            case "confirm" :
+                template = (ConfirmTemplate)jsonUtil.map2Object(templateMap, ConfirmTemplate.class);
+                break;
+        }
+        Message message = new TemplateMessage(altText, template );
+        return message;
+    }
+
+    protected Message createImageMessage(Map<String, Object> map) throws IOException {
+        ImageMessage message = (ImageMessage)jsonUtil.map2Object(map, ImageMessage.class);
+        return message;
+    }
+
+    protected Message createStickerMessage(Map<String, Object> map) throws IOException {
+        StickerMessage message = (StickerMessage)jsonUtil.map2Object(map, StickerMessage.class);
+        return message;
+    }
+
+    protected Message createLocationMessage(Map<String, Object> map) throws IOException {
+        LocationMessage message = (LocationMessage)jsonUtil.map2Object(map, LocationMessage.class);
+        return message;
+    }
+
+    //////////////////////////  Other
 
     private void system(String... args) {
         ProcessBuilder processBuilder = new ProcessBuilder(args);
